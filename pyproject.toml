@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cfi-code-parser"
+name = "cfi-code-decoder"
 version = "0.1.0"
 description = "Decode ISO 10962 CFI codes"
 readme = "README.md"
