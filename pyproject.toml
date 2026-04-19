@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cfi-code-decoder"
+name = "pycfi"
 version = "0.1.0"
 description = "Decode ISO 10962 CFI codes"
 readme = "README.md"
@@ -16,5 +16,5 @@ dependencies = []
 Homepage = "https://github.com/FinTechFelix/cfi-code-decoder"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cfi_code_decoder"]
+packages = ["src/pycfi"]
 

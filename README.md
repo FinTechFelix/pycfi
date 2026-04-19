@@ -19,7 +19,7 @@ A **CFI (Classification of Financial Instruments)** code is a 6-character identi
 ## Installation
 
 ```bash
-pip install cfi-code-decoder
+pip install pycfi
 ```
 
 ---
@@ -29,7 +29,7 @@ pip install cfi-code-decoder
 ### Quickest: module-level function
 
 ```python
-from cfi_code_decoder import decode
+from pycfi import decode
 
 code = decode("ESVUFR")
 print(code.category)   # "equity"
@@ -39,7 +39,7 @@ print(code.group)      # "common/ordinary shares"
 ### Object-oriented: CFICode
 
 ```python
-from cfi_code_decoder import CFICode
+from pycfi import CFICode
 
 code = CFICode("RWSNCA")
 print(code.category)   # "entitlements"
@@ -52,7 +52,7 @@ print(attr.value)      # "equities"
 ### Decoder pattern: CFIDecoder
 
 ```python
-from cfi_code_decoder import CFIDecoder
+from pycfi import CFIDecoder
 
 decoder = CFIDecoder()
 code = decoder.decode("ESVUFR")
@@ -130,7 +130,7 @@ Stateless decoder class. Useful if you prefer the decoder pattern.
 ## Example
 
 ```python
-from cfi_code_decoder import decode
+from pycfi import decode
 
 code = decode("RWSNCA")
 print(code)

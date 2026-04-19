@@ -1,5 +1,5 @@
 import pytest
-from cfi_code_decoder import CFIAttribute, CFICode, CFIDecoder, decode
+from pycfi import CFIAttribute, CFICode, CFIDecoder, decode
 
 
 # ---------------------------------------------------------------------------
