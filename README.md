@@ -24,11 +24,32 @@ pip install pycfi
 
 ---
 
+## Quick Start
+
+```python
+from pycfi import CFICode
+
+print(CFICode("ESVUFR"))
+```
+
+Output:
+
+```
+CFICode('ESVUFR')
+  Category : equity
+  Group    : common/ordinary shares
+  Attributes:
+    voting_right   : voting
+    ownership      : free
+    payment_status : fully paid
+    form           : registered
+```
+
+---
+
 ## Use Cases
 
 ### 1. Identify what an instrument is
-
-The most common use case — find out the category and group of any CFI code.
 
 ```python
 from pycfi import CFICode
@@ -42,9 +63,30 @@ Works across all 14 categories defined in ISO 10962 — equities, debt instrumen
 
 ---
 
-### 2. Read a specific attribute by name
+### 2. See the full breakdown
 
-Look up a named attribute without iterating through the full list.
+Just print the object — category, group, and all attributes are displayed.
+
+```python
+from pycfi import CFICode
+
+print(CFICode("RWSNCA"))
+```
+
+```
+CFICode('RWSNCA')
+  Category : entitlements
+  Group    : warrants
+  Attributes:
+    underlying_assets     : equities
+    type                  : naked warrants
+    call_put              : call
+    exercise_option_style : american
+```
+
+---
+
+### 3. Read a specific attribute by name
 
 ```python
 from pycfi import CFICode
@@ -52,35 +94,30 @@ from pycfi import CFICode
 code = CFICode("RWSNCA")
 attr = code.get_attribute("underlying_assets")
 print(attr.value)     # "equities"
-
-attr = code.get_attribute("exercise_option_style")
-print(attr.value)     # "american"
 ```
 
 Returns `None` if the attribute is not present for that instrument type.
 
 ---
 
-### 3. Inspect all attributes of an instrument
-
-Iterate over every attribute for a complete picture of the instrument.
+### 4. Iterate over all attributes
 
 ```python
 from pycfi import CFICode
 
 code = CFICode("RWSNCA")
 for attr in code.attributes:
-    print(f"[{attr.position}] {attr.name}: {attr.value}")
+    print(f"{attr.name}: {attr.value}")
 
-# [3] underlying_assets: equities
-# [4] type: naked warrants
-# [5] call_put: call
-# [6] exercise_option_style: american
+# underlying_assets: equities
+# type: naked warrants
+# call_put: call
+# exercise_option_style: american
 ```
 
 ---
 
-### 4. Discover all valid values for each attribute position
+### 5. Discover all valid values for each attribute position
 
 Pass `show_options=True` to see every valid value an attribute position can hold — useful for building UIs, dropdowns, or validation logic.
 
@@ -99,9 +136,7 @@ for attr in code.attributes:
 
 ---
 
-### 5. Filter or classify a list of instruments
-
-Use the category and group to segment a dataset of instruments.
+### 6. Filter or classify a list of instruments
 
 ```python
 from pycfi import CFICode
@@ -117,7 +152,7 @@ print(options)   # ["OPASPS"]
 
 ---
 
-### 6. Enrich financial data
+### 7. Enrich financial data
 
 Add human-readable fields to a record or DataFrame row.
 
@@ -126,12 +161,12 @@ from pycfi import CFICode
 
 def enrich(record: dict) -> dict:
     code = CFICode(record["cfi"])
+    voting = code.get_attribute("voting_right")
     return {
         **record,
         "category": code.category,
         "group": code.group,
-        "voting_right": code.get_attribute("voting_right") and
-                        code.get_attribute("voting_right").value,
+        "voting_right": voting.value if voting else None,
     }
 
 instrument = {"isin": "US0378331005", "cfi": "ESVUFR"}
@@ -142,7 +177,7 @@ print(enrich(instrument))
 
 ---
 
-### 7. Handle unknown or partially defined codes gracefully
+### 8. Handle unknown or partially defined codes
 
 Unrecognised characters return `None` rather than raising an error. You can safely handle unknown codes in production pipelines.
 
@@ -157,9 +192,9 @@ print(code.attributes)  # raw characters with name=None
 
 ---
 
-### 8. Validate a CFI code format
+### 9. Validate a CFI code format
 
-`pycfi` raises a `ValueError` for structurally invalid inputs — wrong type or wrong length — which you can catch in validation layers.
+`pycfi` raises a `ValueError` for structurally invalid inputs — wrong type or wrong length.
 
 ```python
 from pycfi import CFICode
@@ -182,6 +217,8 @@ print(is_valid(None))      # False — wrong type
 
 ### `CFICode(code, show_options=False)`
 
+The only class you need. Instantiate with a 6-character CFI code string.
+
 | Attribute | Type | Description |
 |---|---|---|
 | `raw` | `str` | The uppercased input code |
@@ -191,13 +228,15 @@ print(is_valid(None))      # False — wrong type
 
 **Methods:**
 
-- `get_attribute(name: str) → CFIAttribute | None` — Look up an attribute by name.
+- `get_attribute(name: str) -> CFIAttribute | None` — Look up an attribute by name.
+- `print(code)` — Displays the full human-readable breakdown.
+- `repr(code)` — One-line summary: `CFICode('ESVUFR', category='equity', group='common/ordinary shares')`
 
 ### `CFIAttribute`
 
 | Field | Type | Description |
 |---|---|---|
-| `position` | `int` | Character position in the code (3–6) |
+| `position` | `int` | Character position in the code (3-6) |
 | `name` | `str \| None` | Attribute name (e.g. `"voting_right"`) |
 | `value` | `str \| None` | Decoded value (e.g. `"voting"`) |
 | `options` | `list[str]` | All valid values (populated when `show_options=True`) |
