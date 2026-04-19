@@ -1,62 +1,118 @@
-from .map import CATEGORY_MAP, GROUP_MAP, ATTRIBUTE_MAP
+from __future__ import annotations
 
-class Decoder:
-    
-    CATEGORY_MAP = CATEGORY_MAP
-    GROUP_MAP = GROUP_MAP
-    ATTRIBUTE_MAP = ATTRIBUTE_MAP
-    
-    def decode(self, cfi_code: str, show_options: bool = False) -> dict:
-        
-        if not cfi_code or len(cfi_code) != 6:
-            raise ValueError("CFI code must be exactly 6 characters long.")
-        
-        if not isinstance(cfi_code,str):
+from dataclasses import dataclass, field
+
+from .map import ATTRIBUTE_MAP, CATEGORY_MAP, GROUP_MAP
+
+
+@dataclass
+class CFIAttribute:
+    """A single decoded attribute from positions 3–6 of a CFI code."""
+
+    position: int
+    name: str | None
+    value: str | None
+    options: list[str] = field(default_factory=list)
+
+
+class CFICode:
+    """Decodes an ISO 10962 CFI code into its category, group, and attributes.
+
+    Instantiate with a 6-character CFI code string. Decoded fields are
+    available directly on the instance.
+
+    Example::
+
+        code = CFICode("RWSNCA")
+        code.category          # "entitlements"
+        code.group             # "warrants"
+        code.get_attribute("underlying_assets").value  # "equities"
+    """
+
+    def __init__(self, code: str, show_options: bool = False) -> None:
+        if not isinstance(code, str):
             raise ValueError("CFI code must be of type str.")
-        
-        cfi_code = cfi_code.upper()
-        category_letter = cfi_code[0]
-        group_letter = cfi_code[1]
-        
-        decoded = {
-            "category": self.CATEGORY_MAP.get(category_letter, None).lower() if self.CATEGORY_MAP.get(category_letter, None) else None,
-            "group": self.GROUP_MAP.get(category_letter, {}).get(group_letter, None).lower() if self.GROUP_MAP.get(category_letter, {}).get(group_letter, None) else None,
-        }
-        
-        attributes = []
+        code = code.upper()
+        if len(code) != 6:
+            raise ValueError("CFI code must be exactly 6 characters long.")
+
+        self.raw: str = code
+
+        category_letter = code[0]
+        group_letter = code[1]
+
+        category = CATEGORY_MAP.get(category_letter)
+        self.category: str | None = category.lower() if category else None
+
+        group = GROUP_MAP.get(category_letter, {}).get(group_letter)
+        self.group: str | None = group.lower() if group else None
+
+        self.attributes: list[CFIAttribute] = []
         mapping_key = (category_letter, group_letter)
-        if mapping_key in self.ATTRIBUTE_MAP:
-            attribute_mapping_list = self.ATTRIBUTE_MAP[mapping_key]
-            for idx, attribute_info in enumerate(attribute_mapping_list):
-                raw_char = cfi_code[2 + idx]
-                attr_name = attribute_info.get("name")
-                attr_value = attribute_info["mapping"].get(raw_char, None).lower() if attribute_info["mapping"].get(raw_char, None) else None
-                attr_dict = {
-                    "position": idx + 3,
-                    "name": attr_name,
-                    "value": attr_value,
-                }
-                if show_options:
-                    attr_dict["options"] = [v.lower() for v in attribute_info["mapping"].values()]
-                attributes.append(attr_dict)
-        
+
+        if mapping_key in ATTRIBUTE_MAP:
+            for idx, attr_info in enumerate(ATTRIBUTE_MAP[mapping_key]):
+                name = attr_info.get("name")
+                # Skip not-applicable placeholder positions
+                if name and name.startswith("na_"):
+                    continue
+                raw_char = code[2 + idx]
+                attr_value = attr_info["mapping"].get(raw_char)
+                options = (
+                    [v.lower() for v in attr_info["mapping"].values()]
+                    if show_options
+                    else []
+                )
+                self.attributes.append(
+                    CFIAttribute(
+                        position=idx + 3,
+                        name=name,
+                        value=attr_value.lower() if attr_value else None,
+                        options=options,
+                    )
+                )
         else:
             for i in range(4):
-                raw_char = cfi_code[2 + i]
-                attributes.append({
-                    "position": i + 3,
-                    "name": None,
-                    "value": raw_char.lower(),
-                    "options": []
-                })
+                self.attributes.append(
+                    CFIAttribute(
+                        position=i + 3,
+                        name=None,
+                        value=code[2 + i].lower(),
+                    )
+                )
 
-        return {
-            "category": decoded["category"],
-            "group": decoded["group"],
-            "attributes": attributes
-        }
+    def get_attribute(self, name: str) -> CFIAttribute | None:
+        """Return the attribute with the given name, or None if not present."""
+        return next((a for a in self.attributes if a.name == name), None)
+
+    def __repr__(self) -> str:
+        return (
+            f"CFICode({self.raw!r}, "
+            f"category={self.category!r}, "
+            f"group={self.group!r})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, CFICode):
+            return self.raw == other.raw
+        return NotImplemented
+
+
+class CFIDecoder:
+    """Stateless decoder that returns a CFICode for each call to decode()."""
+
+    def decode(self, cfi_code: str, show_options: bool = False) -> CFICode:
+        return CFICode(cfi_code, show_options)
+
+
+def decode(cfi_code: str, show_options: bool = False) -> CFICode:
+    """Decode an ISO 10962 CFI code.
+
+    Convenience wrapper — equivalent to ``CFICode(cfi_code, show_options)``.
+    """
+    return CFICode(cfi_code, show_options)
+
 
 if __name__ == "__main__":
-    cfi_decoder = Decoder()
-    
-    print(cfi_decoder.decode("RWSNCA"))
+    print(decode("RWSNCA"))
+    print(decode("RWSNCA").get_attribute("underlying_assets"))
