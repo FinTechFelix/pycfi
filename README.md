@@ -1,97 +1,151 @@
-# 🔍 CFI Code Decoder
+# CFI Code Decoder
 
-This Python package provides a decoder for **CFI codes** based on the ISO 10962 standard. It translates 6-character CFI codes into human-readable descriptions of financial instruments.
-
----
-
-## 📘 What is a CFI Code?
-
-A **CFI (Classification of Financial Instruments)** code is a 6-character identifier used to classify financial instruments.
-
-- The **first character** indicates the *category* (e.g. equity, debt).
-- The **second character** indicates the *group* (e.g. common shares, bonds).
-- The **remaining four characters** describe specific *attributes* such as voting rights, payment status, interest type, and more — depending on the instrument type.
+A Python package for decoding **CFI codes** based on the ISO 10962 standard. Translates 6-character CFI codes into structured, human-readable descriptions of financial instruments.
 
 ---
 
-## 🧠 How It Works
+## What is a CFI Code?
 
-The decoder uses three core mappings:
+A **CFI (Classification of Financial Instruments)** code is a 6-character identifier used to classify financial instruments globally.
 
-- `CATEGORY_MAP`: maps the first character to a category.
-- `GROUP_MAP`: maps the second character to a group, depending on the category.
-- `ATTRIBUTE_MAP`: provides mappings for the last 4 characters, specific to (category, group) combinations.
-
-If a detailed mapping for a category/group is not available, the raw character values will be returned with `null` attribute names.
+| Position | Meaning | Example |
+|---|---|---|
+| 1 | Category (e.g. Equity, Debt) | `E` → Equity |
+| 2 | Group (e.g. Common Shares, Bonds) | `S` → Common/Ordinary Shares |
+| 3–6 | Attributes specific to the instrument type | Voting rights, payment status, form, etc. |
 
 ---
 
-## ✅ Example Usage
+## Installation
+
+```bash
+pip install cfi-code-decoder
+```
+
+---
+
+## Usage
+
+### Quickest: module-level function
 
 ```python
-from cfi_code_decoder import Decoder
+from cfi_code_decoder import decode
 
-decoder = Decoder()
-
-print(decoder.decode("ESVUFR"))
-print(decoder.decode("RWSNCA"))
-
+code = decode("ESVUFR")
+print(code.category)   # "equity"
+print(code.group)      # "common/ordinary shares"
 ```
 
-## ➡️ Example Output
-```json 
-{
-  "category": "equity",
-  "group": "common/ordinary shares",
-  "attributes": [
-    {
-      "position": 3,
-      "name": "voting_right",
-      "value": "voting"
-    },
-    {
-      "position": 4,
-      "name": "ownership",
-      "value": "free"
-    },
-    {
-      "position": 5,
-      "name": "payment_status",
-      "value": "fully paid"
-    },
-    {
-      "position": 6,
-      "name": "form",
-      "value": "registered"
-    }
-  ]
-}
+### Object-oriented: CFICode
 
-{
-   "category":"entitlements",
-   "group":"warrants",
-   "attributes":[
-      {
-         "position":3,
-         "name":"underlying_assets",
-         "value":"equities"
-      },
-      {
-         "position":4,
-         "name":"type",
-         "value":"naked warrants"
-      },
-      {
-         "position":5,
-         "name":"call_put",
-         "value":"call"
-      },
-      {
-         "position":6,
-         "name":"exercise_option_style",
-         "value":"american"
-      }
-   ]
-}
+```python
+from cfi_code_decoder import CFICode
 
+code = CFICode("RWSNCA")
+print(code.category)   # "entitlements"
+print(code.group)      # "warrants"
+
+attr = code.get_attribute("underlying_assets")
+print(attr.value)      # "equities"
 ```
+
+### Decoder pattern: CFIDecoder
+
+```python
+from cfi_code_decoder import CFIDecoder
+
+decoder = CFIDecoder()
+code = decoder.decode("ESVUFR")
+```
+
+### Accessing attributes
+
+Attributes are available as a list of `CFIAttribute` objects:
+
+```python
+code = decode("ESVUFR")
+
+for attr in code.attributes:
+    print(attr.position, attr.name, attr.value)
+# 3 voting_right voting
+# 4 ownership free
+# 5 payment_status fully paid
+# 6 form registered
+
+# Or look up by name directly
+voting = code.get_attribute("voting_right")
+print(voting.value)    # "voting"
+print(voting.position) # 3
+```
+
+### Showing available options
+
+Pass `show_options=True` to include all valid values for each attribute position:
+
+```python
+code = decode("ESVUFR", show_options=True)
+voting = code.get_attribute("voting_right")
+print(voting.options)
+# ["voting", "non-voting", "restricted", "enhanced voting"]
+```
+
+---
+
+## API Reference
+
+### `decode(cfi_code, show_options=False) → CFICode`
+
+Module-level convenience function. Equivalent to `CFICode(cfi_code, show_options)`.
+
+### `CFICode(code, show_options=False)`
+
+| Attribute | Type | Description |
+|---|---|---|
+| `raw` | `str` | The uppercased input code |
+| `category` | `str \| None` | Decoded category name (lowercase) |
+| `group` | `str \| None` | Decoded group name (lowercase) |
+| `attributes` | `list[CFIAttribute]` | Decoded attribute list |
+
+**Methods:**
+
+- `get_attribute(name: str) → CFIAttribute | None` — Look up an attribute by name.
+
+### `CFIAttribute`
+
+| Field | Type | Description |
+|---|---|---|
+| `position` | `int` | Character position in the code (3–6) |
+| `name` | `str \| None` | Attribute name (e.g. `"voting_right"`) |
+| `value` | `str \| None` | Decoded value (e.g. `"voting"`) |
+| `options` | `list[str]` | All valid values (populated when `show_options=True`) |
+
+### `CFIDecoder`
+
+Stateless decoder class. Useful if you prefer the decoder pattern.
+
+- `decode(cfi_code, show_options=False) → CFICode`
+
+---
+
+## Example
+
+```python
+from cfi_code_decoder import decode
+
+code = decode("RWSNCA")
+print(code)
+# CFICode('RWSNCA', category='entitlements', group='warrants')
+
+for attr in code.attributes:
+    print(f"  [{attr.position}] {attr.name}: {attr.value}")
+# [3] underlying_assets: equities
+# [4] type: naked warrants
+# [5] call_put: call
+# [6] exercise_option_style: american
+```
+
+---
+
+## License
+
+MIT
