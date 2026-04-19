@@ -85,6 +85,23 @@ class CFICode:
         """Return the attribute with the given name, or None if not present."""
         return next((a for a in self.attributes if a.name == name), None)
 
+    def __str__(self) -> str:
+        lines = [
+            f"CFICode({self.raw!r})",
+            f"  Category : {self.category or 'unknown'}",
+            f"  Group    : {self.group or 'unknown'}",
+        ]
+        if self.attributes:
+            lines.append("  Attributes:")
+            max_name = max(
+                (len(a.name) for a in self.attributes if a.name), default=0
+            )
+            for attr in self.attributes:
+                name = attr.name or "unknown"
+                value = attr.value or "unknown"
+                lines.append(f"    {name:<{max_name}} : {value}")
+        return "\n".join(lines)
+
     def __repr__(self) -> str:
         return (
             f"CFICode({self.raw!r}, "

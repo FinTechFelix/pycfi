@@ -99,6 +99,16 @@ def test_options_populated_with_show_options():
 # Repr and equality
 # ---------------------------------------------------------------------------
 
+def test_str_shows_full_breakdown():
+    code = CFICode("ESVTFB")
+    s = str(code)
+    assert "equity" in s
+    assert "common/ordinary shares" in s
+    assert "voting_right" in s
+    assert "voting" in s
+    assert "form" in s
+
+
 def test_repr_contains_raw_category_group():
     code = CFICode("ESVTFB")
     r = repr(code)
@@ -129,15 +139,7 @@ if __name__ == "__main__":
     raw = sys.argv[1] if len(sys.argv) > 1 else input("Enter a CFI code: ")
 
     try:
-        code = CFICode(raw, show_options=True)
+        print(CFICode(raw))
     except ValueError as e:
         print(f"Error: {e}")
         sys.exit(1)
-
-    print(f"\n{code}")
-    print(f"  Category : {code.category}")
-    print(f"  Group    : {code.group}")
-    print(f"\n  Attributes:")
-    for attr in code.attributes:
-        options_str = f"  (options: {', '.join(attr.options)})" if attr.options else ""
-        print(f"    [{attr.position}] {attr.name}: {attr.value}{options_str}")
