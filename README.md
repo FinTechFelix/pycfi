@@ -31,9 +31,9 @@ pip install pycfi
 The most common use case — find out the category and group of any CFI code.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
-code = decode("ESVUFR")
+code = CFICode("ESVUFR")
 print(code.category)  # "equity"
 print(code.group)     # "common/ordinary shares"
 ```
@@ -47,9 +47,9 @@ Works across all 14 categories defined in ISO 10962 — equities, debt instrumen
 Look up a named attribute without iterating through the full list.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
-code = decode("RWSNCA")
+code = CFICode("RWSNCA")
 attr = code.get_attribute("underlying_assets")
 print(attr.value)     # "equities"
 
@@ -63,12 +63,12 @@ Returns `None` if the attribute is not present for that instrument type.
 
 ### 3. Inspect all attributes of an instrument
 
-Iterate over every decoded attribute for a complete picture of the instrument.
+Iterate over every attribute for a complete picture of the instrument.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
-code = decode("RWSNCA")
+code = CFICode("RWSNCA")
 for attr in code.attributes:
     print(f"[{attr.position}] {attr.name}: {attr.value}")
 
@@ -85,9 +85,9 @@ for attr in code.attributes:
 Pass `show_options=True` to see every valid value an attribute position can hold — useful for building UIs, dropdowns, or validation logic.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
-code = decode("ESVUFR", show_options=True)
+code = CFICode("ESVUFR", show_options=True)
 for attr in code.attributes:
     print(f"{attr.name}: {attr.value}  (options: {attr.options})")
 
@@ -101,15 +101,15 @@ for attr in code.attributes:
 
 ### 5. Filter or classify a list of instruments
 
-Use the decoded category and group to segment a dataset of instruments.
+Use the category and group to segment a dataset of instruments.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
 cfi_codes = ["ESVUFR", "RWSNCA", "OPASPS", "DBFUBB", "FFCPSX"]
 
-equities = [c for c in cfi_codes if decode(c).category == "equity"]
-options  = [c for c in cfi_codes if decode(c).category == "listed options"]
+equities = [c for c in cfi_codes if CFICode(c).category == "equity"]
+options  = [c for c in cfi_codes if CFICode(c).category == "listed options"]
 
 print(equities)  # ["ESVUFR"]
 print(options)   # ["OPASPS"]
@@ -122,10 +122,10 @@ print(options)   # ["OPASPS"]
 Add human-readable fields to a record or DataFrame row.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
 def enrich(record: dict) -> dict:
-    code = decode(record["cfi"])
+    code = CFICode(record["cfi"])
     return {
         **record,
         "category": code.category,
@@ -147,9 +147,9 @@ print(enrich(instrument))
 Unrecognised characters return `None` rather than raising an error. You can safely handle unknown codes in production pipelines.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
-code = decode("ZZZZZZ")
+code = CFICode("ZZZZZZ")
 print(code.category)    # None
 print(code.group)       # None
 print(code.attributes)  # raw characters with name=None
@@ -162,11 +162,11 @@ print(code.attributes)  # raw characters with name=None
 `pycfi` raises a `ValueError` for structurally invalid inputs — wrong type or wrong length — which you can catch in validation layers.
 
 ```python
-from pycfi import decode
+from pycfi import CFICode
 
 def is_valid(cfi: str) -> bool:
     try:
-        decode(cfi)
+        CFICode(cfi)
         return True
     except ValueError:
         return False
@@ -178,37 +178,16 @@ print(is_valid(None))      # False — wrong type
 
 ---
 
-### 9. Use the decoder pattern (stateless, reusable)
-
-If you prefer dependency injection or want a single decoder instance shared across your application:
-
-```python
-from pycfi import CFIDecoder
-
-decoder = CFIDecoder()
-
-codes = ["ESVUFR", "RWSNCA", "DBFUBB"]
-for raw in codes:
-    result = decoder.decode(raw)
-    print(f"{raw}: {result.category} / {result.group}")
-```
-
----
-
 ## API Reference
-
-### `decode(cfi_code, show_options=False) → CFICode`
-
-Module-level convenience function. Equivalent to `CFICode(cfi_code, show_options)`.
 
 ### `CFICode(code, show_options=False)`
 
 | Attribute | Type | Description |
 |---|---|---|
 | `raw` | `str` | The uppercased input code |
-| `category` | `str \| None` | Decoded category name (lowercase) |
-| `group` | `str \| None` | Decoded group name (lowercase) |
-| `attributes` | `list[CFIAttribute]` | Decoded attribute list (excludes N/A positions) |
+| `category` | `str \| None` | Category name (lowercase) |
+| `group` | `str \| None` | Group name (lowercase) |
+| `attributes` | `list[CFIAttribute]` | Attribute list (excludes N/A positions) |
 
 **Methods:**
 
@@ -222,12 +201,6 @@ Module-level convenience function. Equivalent to `CFICode(cfi_code, show_options
 | `name` | `str \| None` | Attribute name (e.g. `"voting_right"`) |
 | `value` | `str \| None` | Decoded value (e.g. `"voting"`) |
 | `options` | `list[str]` | All valid values (populated when `show_options=True`) |
-
-### `CFIDecoder`
-
-Stateless decoder class. Useful if you prefer the decoder pattern.
-
-- `decode(cfi_code, show_options=False) → CFICode`
 
 ---
 

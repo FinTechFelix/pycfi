@@ -98,21 +98,6 @@ class CFICode:
         return NotImplemented
 
 
-class CFIDecoder:
-    """Stateless decoder that returns a CFICode for each call to decode()."""
-
-    def decode(self, cfi_code: str, show_options: bool = False) -> CFICode:
-        return CFICode(cfi_code, show_options)
-
-
-def decode(cfi_code: str, show_options: bool = False) -> CFICode:
-    """Decode an ISO 10962 CFI code.
-
-    Convenience wrapper — equivalent to ``CFICode(cfi_code, show_options)``.
-    """
-    return CFICode(cfi_code, show_options)
-
-
 if __name__ == "__main__":
-    print(decode("RWSNCA"))
-    print(decode("RWSNCA").get_attribute("underlying_assets"))
+    print(CFICode("RWSNCA"))
+    print(CFICode("RWSNCA").get_attribute("underlying_assets"))

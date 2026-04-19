@@ -1,1 +1,1 @@
-from .decoder import CFIAttribute, CFICode, CFIDecoder, decode
+from .decoder import CFIAttribute, CFICode

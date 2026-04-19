@@ -1,5 +1,5 @@
 import pytest
-from pycfi import CFIAttribute, CFICode, CFIDecoder, decode
+from pycfi import CFIAttribute, CFICode
 
 
 # ---------------------------------------------------------------------------
@@ -96,30 +96,6 @@ def test_options_populated_with_show_options():
 
 
 # ---------------------------------------------------------------------------
-# CFIDecoder wrapper
-# ---------------------------------------------------------------------------
-
-def test_cfidecoder_returns_cficode():
-    decoder = CFIDecoder()
-    result = decoder.decode("RWSNCA")
-    assert isinstance(result, CFICode)
-    assert result.category == "entitlements"
-
-
-# ---------------------------------------------------------------------------
-# Module-level decode() function
-# ---------------------------------------------------------------------------
-
-def test_decode_function_returns_cficode():
-    result = decode("RWSNCA")
-    assert isinstance(result, CFICode)
-
-
-def test_decode_function_matches_cficode_directly():
-    assert decode("RWSNCA") == CFICode("RWSNCA")
-
-
-# ---------------------------------------------------------------------------
 # Repr and equality
 # ---------------------------------------------------------------------------
 
@@ -153,7 +129,7 @@ if __name__ == "__main__":
     raw = sys.argv[1] if len(sys.argv) > 1 else input("Enter a CFI code: ")
 
     try:
-        code = decode(raw, show_options=True)
+        code = CFICode(raw, show_options=True)
     except ValueError as e:
         print(f"Error: {e}")
         sys.exit(1)
